@@ -1,8 +1,9 @@
-from functools import lru_cache
-
 from fastapi import FastAPI
 
-import config
+from config import get_settings
+from routers import webhook
+
+
 
 app = FastAPI(
     title="Gemini Code Reviewer",
@@ -14,9 +15,7 @@ app = FastAPI(
     },
 )
 
-@lru_cache
-def get_settings():
-    return config.Settings()
+app.include_router(webhook.router)
 
 APP_ID = get_settings().GITHUB_APP_ID
 PRIVATE_KEY = get_settings().GITHUB_PRIVATE_KEY
