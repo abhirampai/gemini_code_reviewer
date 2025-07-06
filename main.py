@@ -4,7 +4,6 @@ from config import get_settings
 from routers import webhook
 
 
-
 app = FastAPI(
     title="Gemini Code Reviewer",
     description="A tool to review code using Gemini",
@@ -27,6 +26,7 @@ if not all([APP_ID, PRIVATE_KEY, WEBHOOK_SECRET, GEMINI_API_KEY]):
         "Missing one or more required environment variables: "
         "GITHUB_APP_ID, GITHUB_PRIVATE_KEY, GITHUB_WEBHOOK_SECRET, GEMINI_API_KEY"
     )
+
 
 @app.get("/")
 def read_root():

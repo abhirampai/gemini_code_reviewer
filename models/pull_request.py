@@ -11,6 +11,7 @@ g = installation.get_github_for_installation()
 
 gemini_client: genai.Client = genai.Client(api_key=get_settings().GEMINI_API_KEY)
 
+
 class ReviewComment(BaseModel):
     path: str
     body: str
@@ -18,6 +19,7 @@ class ReviewComment(BaseModel):
     side: str
     start_line: int
     start_side: str
+
 
 class PullRequest(BaseModel):
     id: int
@@ -30,7 +32,7 @@ class PullRequest(BaseModel):
         return cls(
             id=payload["id"],
             number=payload["number"],
-            repository=event.get("repository")
+            repository=event.get("repository"),
         )
 
     def gemini_review_request(self):
@@ -49,21 +51,20 @@ class PullRequest(BaseModel):
                 """,
                 config={
                     "response_mime_type": "application/json",
-                    "response_schema": list[ReviewComment]
-                }
+                    "response_schema": list[ReviewComment],
+                },
             )
             review_comments_for_the_file = response.parsed
             for review_comment in review_comments_for_the_file:
-                review_comments.append({
-                    "path": file_data.filename,
-                    **review_comment.__dict__
-                })
+                review_comments.append(
+                    {"path": file_data.filename, **review_comment.__dict__}
+                )
 
         self.post_review_comments(pull_request, review_comments)
-    
+
     def post_review_comments(self, pull_request, review_comments: list[dict, any]):
         pull_request.create_review(
             body="Please review the following suggestions",
             event="COMMENT",
-            comments=review_comments
+            comments=review_comments,
         )

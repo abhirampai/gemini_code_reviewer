@@ -5,18 +5,19 @@ from models.pull_request import PullRequest
 
 router = APIRouter(tags=["webhook"])
 
+
 @router.post("/webhook")
 async def webhook(request: Request):
     """
     Receives GitHub webhook events.
-    """ 
+    """
     body = await request.body()
     await verify_signature(request, body)
     payload = parse_webhook_payload(body)
     event_type = get_event_type(request)
     if event_type == "pull_request":
         pull_request = PullRequest.from_github_event(payload)
-        if (payload.get("action") == "open" or payload.get("action") == "reopened"):
+        if payload.get("action") == "open" or payload.get("action") == "reopened":
             pull_request.gemini_review_request()
     elif event_type == "ping":
         return {"message": "pong"}
