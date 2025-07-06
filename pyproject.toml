@@ -1,0 +1,11 @@
+[project]
+name = "gemini-code-reviewer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.115.14",
+    "pydantic-settings>=2.10.1",
+    "ruff>=0.12.2",
+]
