@@ -17,7 +17,11 @@ async def webhook(request: Request):
     event_type = get_event_type(request)
     if event_type == "pull_request":
         pull_request = PullRequest.from_github_event(payload)
-        if payload.get("action") == "open" or payload.get("action") == "reopened":
+        if (
+            payload.get("action") == "open"
+            or payload.get("action") == "reopened"
+            or payload.get("action") == "synchronize"
+        ):
             pull_request.gemini_review_request()
     elif event_type == "ping":
         return {"message": "pong"}

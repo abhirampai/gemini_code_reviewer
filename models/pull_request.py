@@ -3,6 +3,7 @@ from typing import Dict, Any
 from github import Auth, GithubIntegration
 from config import get_settings
 from google import genai
+from utils.diff_checker import find_line_info
 
 auth = Auth.AppAuth(get_settings().GITHUB_APP_ID, get_settings().GITHUB_PRIVATE_KEY)
 gi = GithubIntegration(auth=auth)
@@ -15,10 +16,10 @@ gemini_client: genai.Client = genai.Client(api_key=get_settings().GEMINI_API_KEY
 class ReviewComment(BaseModel):
     path: str
     body: str
-    line: int
-    side: str
-    start_line: int
-    start_side: str
+    line: str
+
+    def to_dict(self):
+        self.model_dump()
 
 
 class PullRequest(BaseModel):
@@ -42,23 +43,20 @@ class PullRequest(BaseModel):
         review_comments = []
 
         for file_data in pull_request.get_files():
-            response = gemini_client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=f"""
-                You are a helpful assistant that reviews code and comments on a pull request.
-                Please review the following code:
-                {file_data.patch}
-                """,
-                config={
-                    "response_mime_type": "application/json",
-                    "response_schema": list[ReviewComment],
-                },
-            )
-            review_comments_for_the_file = response.parsed
+            review_comments_for_the_file = self.generate_review(file_data.patch)
             for review_comment in review_comments_for_the_file:
+                line_changed = review_comment.line
+                review_comment_dict = review_comment.to_dict
+                review_comment_dict.pop("line")
                 review_comments.append(
-                    {"path": file_data.filename, **review_comment.__dict__}
+                    {
+                        **review_comment_dict,
+                        "path": file_data.filename,
+                        **find_line_info(file_data.patch, line_changed),
+                    }
                 )
+            if len(review_comments) >= 50:
+                break
 
         self.post_review_comments(pull_request, review_comments)
 
@@ -68,3 +66,25 @@ class PullRequest(BaseModel):
             event="COMMENT",
             comments=review_comments,
         )
+
+    def generate_review(file_content):
+        response = gemini_client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=f"""
+                You are a helpful assistant that reviews code and comments on a pull request.
+                Please review the file patch from the github api:
+                {file_content}
+
+                Special Instruction:
+                Pull request review thread line must be part of the diff, Pull request review thread start line must be part of the same hunk as the line, and Pull request review thread diff hunk can't be blank.
+
+                The output must contain the following keys:
+                body: The text of the review comment.
+                line: The contents of the line where the change needs to be applied
+                """,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": list[ReviewComment],
+            },
+        )
+        return response.parsed
