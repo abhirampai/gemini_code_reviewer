@@ -67,7 +67,7 @@ class PullRequest(BaseModel):
             comments=review_comments,
         )
 
-    def generate_review(file_content):
+    def generate_review(self, file_content):
         response = gemini_client.models.generate_content(
             model="gemini-2.5-flash",
             contents=f"""
