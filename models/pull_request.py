@@ -18,9 +18,6 @@ class ReviewComment(BaseModel):
     body: str
     line: str
 
-    def to_dict(self):
-        self.model_dump()
-
 
 class PullRequest(BaseModel):
     id: int
@@ -43,10 +40,12 @@ class PullRequest(BaseModel):
         review_comments = []
 
         for file_data in pull_request.get_files():
-            review_comments_for_the_file = self.generate_review(file_data.patch)
+            review_comments_for_the_file: list[ReviewComment] = self.generate_review(
+                file_data.patch
+            )
             for review_comment in review_comments_for_the_file:
                 line_changed = review_comment.line
-                review_comment_dict = review_comment.to_dict
+                review_comment_dict = review_comment.model_dump()
                 review_comment_dict.pop("line")
                 review_comments.append(
                     {
