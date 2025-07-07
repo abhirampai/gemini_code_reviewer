@@ -22,6 +22,7 @@ async def webhook(request: Request):
             or payload.get("action") == "reopened"
             or payload.get("action") == "synchronize"
         ):
+            print(f'Executing gemini review on pull request: {pull_request.repository["full_name"]}#{pull_request.number}')
             pull_request.gemini_review_request()
     elif event_type == "ping":
         return {"message": "pong"}
