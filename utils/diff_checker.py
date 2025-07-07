@@ -21,6 +21,7 @@ def find_line_info(diff_text, target_line):
                     "line": new_lineno,
                     "start_line": hunk_new_start,
                     "start_side": "RIGHT",
+                    "side": "RIGHT"
                 }
             old_lineno += 1
             new_lineno += 1

@@ -19,11 +19,13 @@ async def webhook(request: Request):
         pull_request = PullRequest.from_github_event(payload)
         if (
             payload.get("action") == "open"
-            or payload.get("action") == "reopened"
             or payload.get("action") == "synchronize"
         ):
-            print(f'Executing gemini review on pull request: {pull_request.repository["full_name"]}#{pull_request.number}')
-            pull_request.gemini_review_request()
+            print(f'Executing gemini review on pull request: {pull_request.repository["full_name"]}#{pull_request.number} ')
+            commit_sha = payload.get("after")
+            if commit_sha:
+                print(f'Executing only on files under the commit: {commit_sha}')
+            pull_request.gemini_review_request(commit_sha)
     elif event_type == "ping":
         return {"message": "pong"}
     else:

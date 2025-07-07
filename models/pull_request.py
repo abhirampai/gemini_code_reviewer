@@ -25,7 +25,7 @@ class PullRequest(BaseModel):
     repository: Dict[str, Any]
 
     @classmethod
-    def from_github_event(cls, event: any):
+    def from_github_event(cls, event: Dict[str, Any]):
         payload = event.get("pull_request")
         return cls(
             id=payload["id"],
@@ -33,13 +33,20 @@ class PullRequest(BaseModel):
             repository=event.get("repository"),
         )
 
-    def gemini_review_request(self):
+    def gemini_review_request(self, commit_ref: str = None):
         repo = g.get_repo(self.repository["full_name"])
         pull_request = repo.get_pull(self.number)
+        files = []
+        if commit_ref:
+            files = self.get_commit_files(repo, commit_ref)
+        else:
+            files = pull_request.get_files()
+        
+        self.create_review(files, pull_request)
 
+    def create_review(self, files, pull_request):
         review_comments = []
-
-        for file_data in pull_request.get_files():
+        for file_data in files:
             review_comments_for_the_file: list[ReviewComment] = self.generate_review(
                 file_data.patch
             )
@@ -54,12 +61,12 @@ class PullRequest(BaseModel):
                         **find_line_info(file_data.patch, line_changed),
                     }
                 )
-            if len(review_comments) >= 50:
+            if len(review_comments) >= get_settings().REVIEW_LIMIT:
                 break
 
         self.post_review_comments(pull_request, review_comments)
 
-    def post_review_comments(self, pull_request, review_comments: list[dict, any]):
+    def post_review_comments(self, pull_request, review_comments: list[dict]):
         pull_request.create_review(
             body="Please review the following suggestions",
             event="COMMENT",
@@ -87,3 +94,8 @@ class PullRequest(BaseModel):
             },
         )
         return response.parsed
+    
+    def get_commit_files(self, repo, commit_ref: str):
+        commit = repo.get_commit(commit_ref)
+        return commit.files
+

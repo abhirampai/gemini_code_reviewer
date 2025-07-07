@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     GITHUB_PRIVATE_KEY: str
     WEBHOOK_SECRET: str
     GEMINI_API_KEY: str
+    REVIEW_LIMIT: int
 
     model_config = SettingsConfigDict(env_file=".env")
 
