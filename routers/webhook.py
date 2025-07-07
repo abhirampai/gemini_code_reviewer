@@ -18,7 +18,7 @@ async def webhook(request: Request):
     if event_type == "pull_request":
         pull_request = PullRequest.from_github_event(payload)
         if (
-            payload.get("action") == "open"
+            payload.get("action") == "opened"
             or payload.get("action") == "synchronize"
         ):
             print(f'Executing gemini review on pull request: {pull_request.repository["full_name"]}#{pull_request.number} ')
